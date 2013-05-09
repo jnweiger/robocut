@@ -3,6 +3,7 @@
 # modelled after https://github.com/nosliwneb/robocut.git 
 #
 import usb.core
+import time
     
 # taken from robocut/Plotter.h:53 ff
 
@@ -34,5 +35,41 @@ class SilhouetteCameo:
       pass
     self.dev = dev
 
-  def write(self, string):
-    return self.dev.write(1, string) 
+  def write(s, string):
+    # robocut/Plotter.cpp:73 says: Send in 4096 byte chunks. Not sure where I got this from, I'm not sure it is actually necessary.
+    endpoint = 0x01
+    r = s.dev.write(endpoint, string, interface=0) 
+    if r != len(string):
+      raise ValueError('write %d bytes failed: r=%d' % (len(string), r))
+      
+  def read(s, size=64, timeout=5000):
+    endpoint = 0x82
+    data = s.dev.read(endpoint, size, timeout=timeout, interface=0) 
+    if data is None:
+      raise ValueError('read failed: none')
+    return data 
+
+  def status(s):
+    # Status request.
+    s.write("\x1b\x05")
+    resp = s.read(timeout=5000).tostring()
+    if len(resp) != 2:    raise ValueError('status response not 2 bytes: %s' % (resp))
+    if resp[1] != '\x03': raise ValueError('status response not terminated with 0x03: %s' % (resp[1]))
+    if resp[0] == '0': return "ready"
+    if resp[0] == '1': return "moving"
+    if resp[0] == '2': return "unloaded"
+    return resp[0]
+
+  def initialize(s):
+    # taken from robocut/Plotter.cpp:331 ff
+    # Initialise plotter.
+    s.write("\x1b\x04")
+
+    for i in range(1,10):
+      st = s.status()
+      if (st == 'ready'): 
+        return st
+      print "status=%s" % (st)
+      time.sleep(5.0)
+    return st
+    

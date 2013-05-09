@@ -10,20 +10,9 @@ from Graphtec import SilhouetteCameo
 # coordinates in mm, origin int top lefthand corner
 arrow1 = [ (1,6), (21,6), (18,1), (31,11), (18,21), (21,16), (1,16), (4,11), (1,6) ]
 dev = SilhouetteCameo()
-r = dev.write("\x03")
-print "write() returned %d" % (r)
+state = dev.initialize()
+print state
 
-# taken from robocut/Plotter.cpp:331 ff
-# // Initialise plotter.
-# e = UsbSend(handle, "\x1b\x04");
-# if (!e) goto error;
-# 
-# // Status request.
-# e = UsbSend(handle, "\x1b\x05");
-# if (!e) goto error;
-# 
-# e = UsbReceive(handle, resp, 5000);
-# if (!e) goto error;
 # 
 # if (resp != "0\x03") // 0 = Ready. 1 = Moving. 2 = Nothing loaded. "  " = ??
 # {
